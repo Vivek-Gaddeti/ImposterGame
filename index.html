@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080401">
+<title>🎭 Impostor Game</title>
+
+<link rel="manifest" href="manifest.json">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker registered!'))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+:root{
+  --or:#FF6720;--or2:#FF4500;--gd:#FFB300;--gd2:#FF8C00;
+  --rd:#E74C3C;--gn:#27AE60;--bl:#3498DB;
+  --bg:#080401;--s1:#140800;--s2:#1E1000;--s3:#2C1700;--s4:#3A2000;
+  --tx:#FFF3E0;--tx2:#C9965A;--mu:#6B4020;--br:#3A2010;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;user-select:none;}
+
+/* SCREENS */
+.scr{display:none;min-height:100vh;padding:20px 16px 48px;flex-direction:column;animation:fi .25s ease;}
+.scr.on{display:flex;}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* TYPOGRAPHY */
+.ttl{font-size:26px;font-weight:800;color:var(--tx);margin-bottom:3px;}
+.sub{font-size:14px;color:var(--tx2);margin-bottom:22px;}
+.sec-lbl{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--mu);margin:18px 0 8px;}
+
+/* BUTTONS */
+.btn{width:100%;padding:16px;border-radius:14px;border:none;font-size:16px;font-weight:700;cursor:pointer;transition:transform .1s,box-shadow .1s;letter-spacing:.2px;}
+.btn:active{transform:scale(.96);}
+.btn:disabled{opacity:.35;pointer-events:none;}
+.bp{background:linear-gradient(135deg,var(--or),var(--or2));color:#fff;box-shadow:0 4px 18px rgba(255,103,32,.4);}
+.bg{background:linear-gradient(135deg,var(--gd),var(--gd2));color:#1A0900;}
+.bs{background:var(--s3);color:var(--tx);border:1.5px solid var(--br);}
+.bd{background:linear-gradient(135deg,var(--rd),#C0392B);color:#fff;}
+.bx{background:transparent;color:var(--tx2);border:1.5px solid var(--br);}
+.bsm{background:var(--s4);color:var(--tx);border:1.5px solid var(--br);padding:10px 18px;width:auto;font-size:14px;border-radius:10px;}
+
+/* CARDS & INPUTS */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:16px;padding:16px;margin-bottom:12px;}
+.inp{width:100%;padding:14px 16px;background:var(--s2);border:1.5px solid var(--br);border-radius:12px;color:var(--tx);font-size:16px;outline:none;}
+.inp:focus{border-color:var(--or);}
+.inp::placeholder{color:var(--mu);}
+
+/* TOGGLE & CHIPS */
+.trow{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid var(--br);}
+.trow:last-child{border-bottom:none;}
+.tlbl{font-size:15px;font-weight:600;color:var(--tx);}
+.tsub{font-size:12px;color:var(--tx2);margin-top:2px;}
+.tgl{position:relative;width:48px;height:26px;flex-shrink:0;}
+.tgl input{opacity:0;width:0;height:0;}
+.tslide{position:absolute;inset:0;background:var(--s3);border-radius:13px;transition:.28s;cursor:pointer;border:1.5px solid var(--br);}
+.tslide:before{content:'';position:absolute;width:20px;height:20px;left:2px;top:1px;background:var(--mu);border-radius:50%;transition:.28s;}
+.tgl input:checked+.tslide{background:var(--or);border-color:var(--or);}
+.tgl input:checked+.tslide:before{transform:translateX(22px);background:#fff;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.chip{padding:8px 15px;border-radius:20px;border:1.5px solid var(--br);background:var(--s2);color:var(--tx2);font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
+.chip.on{background:var(--or);border-color:var(--or);color:#fff;}
+
+/* PLAYER LIST */
+.pitem{display:flex;align-items:center;padding:12px 14px;background:var(--s2);border-radius:12px;margin-bottom:8px;animation:si .2s ease;}
+@keyframes si{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.pnum{width:26px;height:26px;border-radius:50%;background:var(--s3);color:var(--tx2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-right:11px;flex-shrink:0;}
+.pname{flex:1;font-size:16px;font-weight:600;}
+.prm{background:none;border:none;color:var(--rd);font-size:22px;cursor:pointer;padding:2px 6px;line-height:1;}
+
+/* NUM SELECTOR & VOTE OPTIONS */
+.nsel{display:flex;align-items:center;gap:14px;}
+.nbtn{width:38px;height:38px;border-radius:50%;border:2px solid var(--br);background:var(--s2);color:var(--tx);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.nbtn:active{background:var(--or);border-color:var(--or);}
+.nval{font-size:26px;font-weight:900;color:var(--or);min-width:28px;text-align:center;}
+.vopt{display:flex;align-items:center;padding:14px;background:var(--s2);border:2px solid var(--br);border-radius:13px;margin-bottom:9px;cursor:pointer;transition:all .18s;}
+.vopt.sel{border-color:var(--or);background:rgba(255,103,32,.1);}
+.vav{width:42px;height:42px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;margin-right:13px;flex-shrink:0;color:var(--tx2);}
+.vnm{font-size:16px;font-weight:700;flex:1;}
+.vcnt{margin-left:auto;font-size:13px;font-weight:800;color:var(--tx2);min-width:36px;text-align:right;}
+
+/* SCORE ROWS & MISC */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--br);}
+.srow:last-child{border-bottom:none;}
+.snm{font-size:15px;font-weight:600;}
+.sbdg{background:var(--s2);padding:4px 12px;border-radius:20px;font-size:14px;font-weight:800;}
+.sbdg.pos{color:var(--gn);}
+.sbdg.neg{color:var(--rd);}
+.sbdg.zer{color:var(--mu);}
+.lrow{display:flex;align-items:center;padding:13px 14px;background:var(--s2);border-radius:13px;margin-bottom:7px;}
+.lrnk{font-size:18px;font-weight:900;width:34px;color:var(--mu);}
+.lnm{flex:1;font-size:16px;font-weight:600;}
+.lsc{font-size:22px;font-weight:900;color:var(--or);}
+.back{background:none;border:none;color:var(--tx2);font-size:16px;padding:8px 0;cursor:pointer;display:flex;align-items:center;gap:5px;margin-bottom:14px;}
+.sp{flex:1;}
+.row2{display:flex;gap:10px;}
+.row2 .btn{flex:1;}
+.warn{background:rgba(255,179,0,.1);border:1px solid rgba(255,179,0,.3);border-radius:10px;padding:11px;font-size:13px;color:var(--gd);margin-bottom:14px;}
+select{background:var(--s2);color:var(--tx);border:1.5px solid var(--br);border-radius:10px;padding:8px 11px;font-size:14px;outline:none;}
+select:focus{border-color:var(--or);}
+
+/* SPECIFIC SCREENS */
+#home{justify-content:center;align-items:center;text-align:center;background:radial-gradient(ellipse at 50% 30%,rgba(80,30,0,.6) 0%,transparent 65%),var(--bg);}
+.hlogo{font-size:72px;margin-bottom:6px;animation:bob 3s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.htitle{font-size:44px;font-weight:900;letter-spacing:-1.5px;background:linear-gradient(135deg,var(--gd),var(--or));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hsub{font-size:14px;color:var(--tx2);margin-bottom:36px;}
+.hbtns{width:100%;max-width:300px;display:flex;flex-direction:column;gap:12px;}
+
+#reveal-pass, #reveal-lock, #intermission{justify-content:center;align-items:center;text-align:center;}
+.rpname{font-size:36px;font-weight:900;color:var(--gd);margin-bottom:8px;}
+.rpinst{font-size:15px;color:var(--tx2);margin-bottom:32px;line-height:1.5;max-width:270px;}
+.rpprog{font-size:13px;color:var(--mu);margin-bottom:20px;background:var(--s2);padding:5px 14px;border-radius:20px;}
+
+#reveal-show{justify-content:center;align-items:center;text-align:center;padding:28px;}
+.wrbdg{font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;padding:6px 20px;border-radius:20px;display:inline-block;margin-bottom:20px;}
+.wrc{background:rgba(39,174,96,.2);color:var(--gn);}
+.wri{background:rgba(231,76,60,.2);color:var(--rd);}
+.wrw{background:rgba(255,255,255,.1);color:var(--tx);}
+.wword{font-size:52px;font-weight:900;color:var(--tx);margin-bottom:10px;line-height:1.1;word-break:break-word;}
+.whint{font-size:14px;color:var(--tx2);margin-bottom:32px;max-width:270px;line-height:1.5;}
+.cdring{width:76px;height:76px;border-radius:50%;background:var(--s1);border:3px solid var(--or);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:var(--or);margin:0 auto 8px;transition:border-color .3s,color .3s;}
+.cdring.urg{border-color:var(--rd);color:var(--rd);}
+.wtelugu{font-size:20px;color:var(--tx2);margin-bottom:6px;font-weight:500;letter-spacing:0.5px;min-height:26px;}
+
+.crbdg{background:var(--s2);border:1px solid var(--br);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--tx2);display:inline-block;margin-bottom:14px;align-self:flex-start;}
+.cpcard{background:linear-gradient(135deg,var(--s1),var(--s2));border:2px solid var(--or);border-radius:20px;padding:28px 20px;text-align:center;margin-bottom:20px;}
+.cpemoji{font-size:44px;margin-bottom:6px;}
+.cpname{font-size:30px;font-weight:900;color:var(--gd);}
+.tdsp{font-size:68px;font-weight:900;text-align:center;color:var(--or);}
+.tdsp.urg{color:var(--rd);animation:pl .5s infinite;}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.4}}
+
+#results{align-items:center;}
+.rhdr{text-align:center;padding:28px 0 20px;width:100%;}
+.remi{font-size:60px;}
+.rtitle{font-size:34px;font-weight:900;margin:6px 0 3px;}
+.rtitle.win{color:var(--gn);}
+.rtitle.lose{color:var(--rd);}
+.rwcard{background:var(--s1);border:1px solid var(--br);border-radius:18px;padding:22px;width:100%;margin-bottom:14px;text-align:center;}
+.rwlbl{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:6px;}
+.rwword{font-size:34px;font-weight:900;color:var(--gd);}
+.riwrd{font-size:24px;font-weight:800;color:var(--rd);}
+
+.htstep{display:flex;gap:13px;margin-bottom:18px;align-items:flex-start;}
+.htnum{width:30px;height:30px;border-radius:50%;background:var(--or);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:14px;}
+.htxt{font-size:14px;color:var(--tx2);line-height:1.6;flex:1;}
+.htxt strong{color:var(--tx);}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;}
+/* PREFERENCE ORDER */
+.pref-item{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--s2);border-radius:10px;margin-bottom:6px;border:1.5px solid var(--br);}
+.pref-num{min-width:22px;height:22px;border-radius:50%;background:var(--or);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.pref-name{flex:1;font-size:14px;font-weight:600;color:var(--tx);}
+.pref-btn{background:none;border:none;color:var(--tx2);font-size:16px;cursor:pointer;padding:2px 5px;line-height:1;}
+.pref-btn:active{color:var(--or);}
+.pref-rm{background:none;border:none;color:var(--rd);font-size:16px;cursor:pointer;padding:2px 6px;line-height:1;}
+</style>
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<div id="home" class="scr on">
+  <div class="hlogo">🎭</div>
+  <div class="htitle">IMPOSTOR</div>
+  <div class="hsub">Telugu Party Game · ఆంధ్రప్రదేశ్</div>
+  <div class="hbtns">
+    <button class="btn bp" onclick="newGame()">🎮 Start New Game</button>
+    <button class="btn bs" onclick="go('leaderboard')">🏆 Leaderboard</button>
+    <button class="btn bx" onclick="go('howto')">📖 How to Play</button>
+  </div>
+</div>
+
+<!-- ============ PLAYERS ============ -->
+<div id="players" class="scr">
+  <button class="back" onclick="go('home')">← Back</button>
+  <div class="ttl">Add Players 👥</div>
+  <div class="sub">Min 3, max 15 players</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <input id="pinp" class="inp" placeholder="Player name" maxlength="20" onkeydown="if(event.key==='Enter')addPlayer()">
+    <button class="btn bp" style="width:auto;padding:14px 18px;" onclick="addPlayer()">Add</button>
+  </div>
+  <div id="plist"></div>
+  <div id="saved-section" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px;">
+      <div class="sec-lbl" style="margin:0;">⚡ Saved Players</div>
+      <button onclick="clearDB()" style="background:none;border:none;color:var(--mu);font-size:12px;cursor:pointer;padding:2px 0;">Clear all</button>
+    </div>
+    <div id="saved-chips" class="chips"></div>
+  </div>
+  <div class="sp"></div>
+  <div id="pwarn" class="warn" style="display:none">⚠️ Add at least 3 players to continue</div>
+  <button id="pnext" class="btn bg" onclick="go('settings')" disabled>Next: Settings →</button>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div id="settings" class="scr">
+  <button class="back" onclick="go('players')">← Back</button>
+  <div class="ttl">Settings ⚙️</div>
+  <div class="sub">Customize your game</div>
+  <div class="scroll">
+
+    <div class="sec-lbl">Roles</div>
+    <div class="card">
+      <div class="trow">
+        <div><div class="tlbl">🎭 Number of Impostors</div><div class="tsub">1 for small groups, 2+ for large</div></div>
+        <div class="nsel">
+          <button class="nbtn" onclick="adjImp(-1)">−</button>
+          <div class="nval" id="imp-num">1</div>
+          <button class="nbtn" onclick="adjImp(1)">+</button>
+        </div>
+      </div>
+      <div class="trow">
+        <div><div class="tlbl">🕵️ Mr. White Role</div><div class="tsub">Gets NO word — must guess from others' clues</div></div>
+        <label class="tgl"><input type="checkbox" id="tog-mw"><span class="tslide"></span></label>
+      </div>
+    </div>
+
+    <div class="sec-lbl">Clue System</div>
+    <div class="card">
+      <div class="trow">
+        <div><div class="tlbl">🗣️ Clue Rounds</div><div class="tsub">Players give clues in turns before vote</div></div>
+        <label class="tgl"><input type="checkbox" id="tog-clue" checked onchange="togClue()"><span class="tslide"></span></label>
+      </div>
+      <div id="clue-opts">
+        <div class="trow">
+          <div class="tlbl">⏱️ Clue Timer</div>
+          <select id="clue-time">
+            <option value="0">No Limit</option>
+            <option value="15">15 sec</option>
+            <option value="30" selected>30 sec</option>
+            <option value="60">60 sec</option>
+          </select>
+        </div>
+        <div class="trow" style="border-bottom:none">
+          <div><div class="tlbl">🔄 Rounds Before Vote</div><div class="tsub">How many clue rounds before voting</div></div>
+          <select id="clue-rds">
+            <option value="1" selected>1 Round</option>
+            <option value="2">2 Rounds</option>
+            <option value="3">3 Rounds</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-lbl">Voting Style</div>
+    <div class="card">
+      <div class="chips" style="margin-top:0;margin-bottom:10px;">
+        <div class="chip on" id="vi-chip" onclick="setVote('individual')">👤 Individual Vote</div>
+        <div class="chip" id="vt-chip" onclick="setVote('team')">👥 Team Vote</div>
+      </div>
+      <div id="vdesc" style="font-size:13px;color:var(--tx2);line-height:1.5;">Each player votes secretly. Results shown after everyone votes.</div>
+    </div>
+
+    <div class="sec-lbl">Topic Selection</div>
+    <div class="card">
+      <div class="trow">
+        <div>
+          <div class="tlbl">📋 Preference Order</div>
+          <div class="tsub" id="pref-sub">OFF · freely pick any topics</div>
+        </div>
+        <label class="tgl"><input type="checkbox" id="tog-pref" onchange="togPref()"><span class="tslide"></span></label>
+      </div>
+      <!-- Free mode: multi-select chips -->
+      <div id="pack-free">
+        <div style="font-size:12px;color:var(--tx2);margin:8px 0 6px;">Select one or more topic packs to play from.</div>
+        <div class="chips" id="pack-chips" style="margin-top:0;"></div>
+      </div>
+      <!-- Preference mode: ordered list -->
+      <div id="pack-pref" style="display:none;">
+        <div style="font-size:12px;color:var(--tx2);margin:8px 0 6px;">Topics play in order ↓ — first game uses #1, then #2, etc.</div>
+        <div id="pref-order-list"></div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin:10px 0 6px;">Add topics:</div>
+        <div class="chips" id="pref-avail-chips"></div>
+      </div>
+    </div>
+
+    <div class="sec-lbl">Impostor Word Mode</div>
+    <div class="card">
+      <div class="trow" style="border-bottom:none;">
+        <div>
+          <div class="tlbl" id="impmode-lbl">🎭 Similar Word</div>
+          <div class="tsub" id="impmode-sub">Impostor gets a related but different word</div>
+        </div>
+        <label class="tgl"><input type="checkbox" id="tog-impmode" onchange="togImpMode()"><span class="tslide"></span></label>
+      </div>
+      <div id="impmode-desc" style="font-size:13px;color:var(--tx2);padding:8px 0 2px;line-height:1.6;">
+        <span id="impmode-text">Impostor receives a <b style="color:var(--tx)">similar but different</b> word. They must blend in carefully — harder to spot but they have something to work with.</span>
+      </div>
+    </div>
+
+    <div class="sec-lbl">Custom Word Pairs</div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:11px;">Add your own pairs. Everyone gets Word 1, Impostor gets Word 2.</div>
+      <div id="cpairs"></div>
+      <div style="display:flex;gap:7px;margin-bottom:8px;">
+        <input id="cw1" class="inp" placeholder="Word 1 (real)" maxlength="25" style="flex:1;">
+        <input id="cw2" class="inp" placeholder="Word 2 (impostor)" maxlength="25" style="flex:1;">
+      </div>
+      <button class="bsm" onclick="addCPair()">+ Add Pair</button>
+    </div>
+    <div style="height:16px;"></div>
+  </div>
+  <button class="btn bg" style="margin-top:14px;" onclick="startGame()">🎮 Start Game!</button>
+</div>
+
+<!-- ============ REVEAL: PASS PHONE ============ -->
+<div id="reveal-pass" class="scr">
+  <div class="rpprog" id="rp-prog">Player 1 of 5</div>
+  <div style="font-size:56px;margin-bottom:14px;">📱</div>
+  <div class="rpname" id="rp-name">Ravi</div>
+  <div class="rpinst">Hold the phone close.<br>Don't show anyone else! 🙈</div>
+  <button class="btn bp" style="width:280px;" onclick="showWord()">👁️ Show My Word</button>
+</div>
+
+<!-- ============ REVEAL: SHOW WORD ============ -->
+<div id="reveal-show" class="scr">
+  <div id="wr-badge" class="wrbdg wrc">✅ Crewmate</div>
+  <div id="wr-word" class="wword">—</div>
+  <div id="wr-telugu" class="wtelugu"></div>
+  <div id="wr-hint" class="whint"></div>
+  <div class="cdring" id="cd-ring">5</div>
+  <div style="font-size:13px;color:var(--mu);margin-bottom:20px;">Auto-hiding in <span id="cd-sec">5</span>s</div>
+  <button class="btn bs" style="width:220px;" onclick="hideNow()">🙈 Hide Now</button>
+</div>
+
+<!-- ============ REVEAL: LOCK SCREEN ============ -->
+<div id="reveal-lock" class="scr">
+  <div style="font-size:64px;margin-bottom:16px;">🔒</div>
+  <div style="font-size:22px;font-weight:800;color:var(--tx);margin-bottom:8px;">Screen Locked</div>
+  <div style="font-size:15px;color:var(--tx2);">Pass to the next player</div>
+</div>
+
+<!-- ============ FIRST PLAYER ============ -->
+<div id="first-player" class="scr" style="justify-content:center;align-items:center;text-align:center;">
+  <div style="font-size:52px;margin-bottom:10px;">🎲</div>
+  <div class="ttl" style="text-align:center;">ముందు ఎవరు?</div>
+  <div class="sub" style="text-align:center;">Who Goes First?</div>
+  <div style="margin:24px 0 32px;">
+    <div style="background:linear-gradient(135deg,var(--s1),var(--s2));border:2px solid var(--or);border-radius:22px;padding:32px 40px;">
+      <div style="font-size:48px;margin-bottom:10px;" id="fp-emoji">👤</div>
+      <div style="font-size:34px;font-weight:900;color:var(--gd);" id="fp-name">Player</div>
+      <div style="font-size:13px;color:var(--tx2);margin-top:8px;">starts the clue round!</div>
+    </div>
+  </div>
+  <button class="btn bp" style="width:260px;" onclick="startFromFirstPlayer()">🎮 Let's Play!</button>
+</div>
+
+<!-- ============ CLUES ============ -->
+<div id="clues" class="scr">
+  <div class="crbdg" id="cl-badge">Round 1 • Clue Time</div>
+  <div class="ttl">Give Your Clue 🗣️</div>
+  <div class="sub" id="cl-prog">Player 1 of 5</div>
+  <div class="cpcard">
+    <div class="cpemoji" id="cl-emoji">👤</div>
+    <div class="cpname" id="cl-pname">Player</div>
+    <div style="font-size:13px;color:var(--tx2);margin-top:4px;">Give ONE clue about your word</div>
+  </div>
+  <div id="cl-timer-wrap">
+    <div class="tdsp" id="cl-timer">30</div>
+    <div style="text-align:center;font-size:12px;color:var(--mu);margin-bottom:8px;">seconds</div>
+  </div>
+  <div class="sp"></div>
+  <div class="row2" style="margin-bottom:10px;">
+    <button class="btn bs" onclick="skipClue()">⏭️ Skip</button>
+    <button class="btn bp" onclick="nextClue()">Next →</button>
+  </div>
+  <button class="btn bd" onclick="skipToVote()">🗳️ Skip to Voting</button>
+</div>
+
+<!-- ============ VOTE ============ -->
+<div id="vote" class="scr">
+  <div class="ttl" id="vt-title">🗳️ Vote</div>
+  <div id="vt-voter-hdr" style="margin-bottom:4px;display:none;">
+    <div style="font-size:22px;font-weight:800;color:var(--gd);" id="vt-voter-name"></div>
+  </div>
+  <div class="sub" id="vt-sub">Who is the Impostor?</div>
+  <div id="vt-opts"></div>
+  <div class="sp"></div>
+  <button id="vt-sbmt" class="btn bd" onclick="submitVote()" disabled>Submit Vote</button>
+</div>
+
+<!-- ============ INTERMISSION (ROUND CONTINUES) ============ -->
+<div id="intermission" class="scr">
+  <div class="ttl" id="int-title" style="margin-top:20px;">Ejected!</div>
+  <div class="sub" id="int-sub">...</div>
+  <div style="font-size:72px; margin: 32px 0; text-align:center;" id="int-icon">🎭</div>
+  <div class="sp"></div>
+  <button class="btn bp" onclick="continueGame()">Next Round →</button>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div id="results" class="scr">
+  <div class="rhdr">
+    <div class="remi" id="r-emi">🎭</div>
+    <div class="rtitle" id="r-title">Results!</div>
+    <div style="font-size:14px;color:var(--tx2);margin-top:4px;" id="r-sub"></div>
+  </div>
+  <div class="rwcard">
+    <div class="rwlbl">Real Word (Crewmates)</div>
+    <div class="rwword" id="r-rw">—</div>
+    <div style="color:var(--mu);margin:6px 0;font-size:13px;">vs Impostor's Word</div>
+    <div class="riwrd" id="r-iw">—</div>
+  </div>
+  <div class="sec-lbl">The Impostors Were</div>
+  <div id="r-imps"></div>
+  <div class="sec-lbl">Points Awarded</div>
+  <div class="card" id="r-scores"></div>
+  <div style="height:14px;"></div>
+  <div class="row2">
+    <button class="btn bs" onclick="go('home')">🏠 Home</button>
+    <button class="btn bp" onclick="playAgain()">🔄 Play Again</button>
+  </div>
+  <button class="btn bx" style="margin-top:10px;" onclick="go('leaderboard')">🏆 View Leaderboard</button>
+</div>
+
+<!-- ============ LEADERBOARD ============ -->
+<div id="leaderboard" class="scr">
+  <button class="back" onclick="go('home')">← Back</button>
+  <div class="ttl">🏆 Leaderboard</div>
+  <div class="sub">All-time scores</div>
+  <div id="lb-list"></div>
+  <div class="sp"></div>
+  <button class="btn bd" style="margin-top:16px;" onclick="resetLB()">🗑️ Reset All Scores</button>
+</div>
+
+<!-- ============ HOW TO PLAY ============ -->
+<div id="howto" class="scr">
+  <button class="back" onclick="go('home')">← Back</button>
+  <div class="ttl">📖 How to Play</div>
+  <div class="sub">Simple rules, sneaky fun!</div>
+  <div class="scroll">
+    <div class="card">
+      <div class="htstep"><div class="htnum">1</div><div class="htxt"><strong>Add players</strong> and pick your settings.</div></div>
+      <div class="htstep"><div class="htnum">2</div><div class="htxt"><strong>Each player gets a word.</strong> Most get the same word — but 1+ <strong>Impostors</strong> get a different word!</div></div>
+      <div class="htstep"><div class="htnum">3</div><div class="htxt"><strong>Give clues</strong> about your word. Impostors must blend in by listening to others!</div></div>
+      <div class="htstep"><div class="htnum">4</div><div class="htxt"><strong>Vote!</strong> Everyone votes on who they think is the Impostor. Most votes = ejected!</div></div>
+      <div class="htstep"><div class="htnum">5</div><div class="htxt"><strong>Game Continues</strong> until all Impostors are caught, OR the Impostors outnumber the Crewmates.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  WORD PACKS
+// ============================================================
+const PACKS = {
+  tmovies:{name:'🎬 Telugu Movies',pairs:[
+    ['Baahubali','Magadheera'],['Pushpa','Arya'],['RRR','Sye Raa'],
+    ['Pokiri','Businessman'],['Temper','Dookudu'],['Jalsa','Julayi'],
+    ['Akhanda','Simha'],['Bimbisara','Yamadonga'],['Kushi','Geetanjali'],
+    ['Sarrainodu','Naayak'],['Okkadu','Athadu'],['Vakeel Saab','Jathi Ratnalu'],
+    ['Devara','Salaar'],['Sita Ramam','Shyam Singha Roy'],
+    ['Krack','Dhamaka'],['Most Eligible Bachelor','Love Story'],
+    ['Mahanati','Jersey'],['Geetha Govindam','Fidaa'],
+    ['Arjun Reddy','Kabir Singh'],['Pelli Choopulu','Ee Nagaraniki Emaindi'],
+    ['Rangasthalam','Aravindha Sametha'],['F2','F3'],
+    ['Maharshi','Bharat Ane Nenu'],['Srimanthudu','Son of Satyamurthy'],
+    ['Nannaku Prematho','Mirchi'],['Guntur Kaaram','Bhola Shankar'],
+    ['Dasara','Waltair Veerayya'],['Karthikeya 2','Bimbisara 2'],
+    ['Agent Sai Srinivasa','Ori Devuda'],['Ninnu Kori','Chal Mohan Ranga'],
+    ['Bheemla Nayak','Sardar'],['Ante Sundaraniki','Bangarraju'],
+  ]},
+  tactors:{name:'🌟 Telugu Actors',pairs:[
+    ['Allu Arjun','Jr NTR'],['Mahesh Babu','Prabhas'],['Ram Charan','Varun Tej'],
+    ['Chiranjeevi','Balakrishna'],['Pawan Kalyan','Venkatesh'],['Nani','Naga Chaitanya'],
+    ['Vijay Deverakonda','Adivi Sesh'],['Ravi Teja','Sunil'],
+    ['Siddharth','Sharwanand'],['Nikhil','Vishwak Sen'],
+    ['Naveen Polishetty','Priyadarshi'],['Brahmanandam','Ali'],
+    ['Nagarjuna','Mohan Babu'],['Sonu Sood','Tarun'],
+    ['Manchu Manoj','Manchu Vishnu'],['Gopichand','Srikanth'],
+    ['Naga Shaurya','Karthikeya'],['Aadhi Pinisetty','Bellamkonda Sai'],
+    ['Sree Vishnu','Rahul Ramakrishna'],['Vennela Kishore','Posani'],
+    ['Rohit','Sandeep Kishore'],['Sushanth','Aakash Puri'],
+    ['Harish Uthamam','Pradeep Rawat'],['Sapthagiri','Tagubothu Ramesh'],
+    ['MS Narayana','Dharmavarapu'],['Kota Srinivasa Rao','Prudhviraj'],
+  ]},
+  tactresses:{name:'💃 Telugu Actresses',pairs:[
+    ['Samantha','Rashmika Mandanna'],['Pooja Hegde','Kiara Advani'],
+    ['Anushka Shetty','Tamannaah'],['Kajal Aggarwal','Trisha'],
+    ['Keerthi Suresh','Sai Pallavi'],['Nayanthara','Deepika Padukone'],
+    ['Rakul Preet','Anu Emmanuel'],['Sreeleela','Shanvi Srivastava'],
+    ['Payal Rajput','Mehreen Pirzada'],['Catherine Tresa','Mannara Chopra'],
+    ['Regina Cassandra','Ritu Varma'],['Nabha Natesh','Niddhi Agerwal'],
+    ['Pragya Jaiswal','Aditi Rao Hydari'],['Hebah Patel','Lavanya Tripathi'],
+    ['Deeksha Seth','Hamsa Nandini'],['Revathi','Meena'],
+    ['Bhanupriya','Suhasini'],['Soundarya','Ramya Krishna'],
+    ['Mumaith Khan','Rachana'],['Nikki Tamboli','Shraddha Das'],
+  ]},
+  tfood:{name:'🍛 Telugu Food',pairs:[
+    ['Pesarattu','Dosa'],['Gongura Pachadi','Tomato Chutney'],['Pulihora','Lemon Rice'],
+    ['Biryani','Pulao'],['Idly','Vada'],['Sambar','Rasam'],['Pongal','Khichdi'],
+    ['Gutti Vankaya','Bendakaya Fry'],['Chicken Curry','Mutton Curry'],
+    ['Hyderabadi Biryani','Ambur Biryani'],['Boorelu','Garelu'],
+    ['Paramannam','Semiya Payasam'],['Jilebi','Mysore Pak'],
+    ['Mirchi Bajji','Punugulu'],['Bobbatlu','Kajjikayalu'],
+    ['Aavakaya Pickle','Gongura Pickle'],['Royyala Curry','Chepa Pulusu'],
+    ['Pachi Pulusu','Mamidikaya Pappu'],['Chegodilu','Murukku'],
+    ['Upma','Idli Upma'],['Curd Rice','Tomato Rice'],
+    ['Chintapandu Pulihora','Coconut Rice'],['Kobbari Mithai','Bellam Gavvalu'],
+    ['Rava Laddu','Besan Laddu'],['Pulasa Fish','Rohu Fish'],
+    ['Natu Kodi Pulusu','Boneless Chicken'],['Pesarattu Upma','Rava Dosa'],
+    ['Avial','Kootu'],['Uthappam','Paddu'],['Poori','Chapati'],
+  ]},
+  animals:{name:'🐘 Animals',pairs:[
+    ['Tiger','Lion'],['Elephant','Rhinoceros'],['Parrot','Mynah Bird'],
+    ['Cow','Buffalo'],['Horse','Donkey'],['Crocodile','Alligator'],
+    ['Peacock','Parrot'],['Cobra','Python'],['Monitor Lizard','Chameleon'],
+    ['Deer','Antelope'],['Bear','Wolf'],['Camel','Giraffe'],
+    ['Monkey','Chimpanzee'],['Eagle','Vulture'],['Kingfisher','Heron'],
+    ['Frog','Toad'],['Porcupine','Hedgehog'],['Mongoose','Weasel'],
+    ['Wild Boar','Warthog'],['Jackal','Fox'],['Sloth Bear','Sun Bear'],
+    ['Flamingo','Pelican'],['Octopus','Squid'],['Shark','Whale'],
+    ['Crow','Raven'],['Sparrow','Pigeon'],['Butterfly','Moth'],
+    ['Scorpion','Spider'],['Ant','Termite'],['Bee','Wasp'],
+  ]},
+
+  memes:{name:'😂 Telugu Memes',pairs:[
+    ['Thaggedhe Le','Taggedi Le'],['Jabardasth','Extra Jabardasth'],
+    ['Bujji','Anna'],['Mass Maharaja','Power Star'],
+    ['Srivalli','Oo Antava'],['Pushpa Fire','Pushpa Flower'],
+    ['Rolex','Srikanth'],['Kya Scene Hai','Enti Scene Ra'],
+    ['Nenu Rowdy Ne','Nenu Hero Ne'],['Scene Potundi','Scene Ledu'],
+    ['Bro Pellaadtha','Bro Ledu'],['Pakka Commercial','Pakka Local'],
+    ['Oka Laila','Oka Priya'],['Naatu Naatu','Naatu Remix'],
+    ['Pushpa Pushpa','Flower Flower'],['Pedda Babu','Chinna Babu'],
+    ['Tension Padaku','Chill Bro'],['Abbayi Bagunnadu','Ammaayi Bagundi'],
+    ['Item Number','Mass Number'],['Swag Se Karenge','Attitude Tho'],
+    ['Nuvvu Naaku Nachchav','Nachchav Nachchav'],['Full On Mass','Full On Class'],
+    ['Bullet Bullet','Power Power'],['Saami Saami','Naatu Naatu'],
+    ['Idhi Nijama','Unnadhi Kadha'],['Keka Keka','Nailed It'],
+    ['Maccha','Mawa'],['Boss','Anna'],['Rowdy','Gunda'],['Hero','Zero'],
+    ['Oka Roju','Oka Rathi'],['Potti Hero','Peddha Hero'],
+  ]},
+  directors:{name:'🎥 Telugu Directors',pairs:[
+    ['SS Rajamouli','Trivikram Srinivas'],['Sukumar','Sandeep Reddy Vanga'],
+    ['Boyapati Srinu','Puri Jagannadh'],['Vamshi Paidipally','Anil Ravipudi'],
+    ['Koratala Siva','Harish Shankar'],['Dasari Narayana Rao','K. Viswanath'],
+    ['S. V. Krishna Reddy','Jandhyala'],['Raghavendra Rao','Bapu Films'],
+    ['Ramesh Varma','Srinu Vaitla'],['Maruthi','Teja'],
+    ['Buchi Babu Sana','Chandoo Mondeti'],['Nag Ashwin','Vi Anand'],
+    ['Hanu Raghavapudi','Mahesh Babu P'],['Deva Katta','Rajiv Kanakala'],
+    ['Mohan Krishna Indraganti','Krish Jagarlamudi'],
+    ['Nandini Reddy','Revathi Pillai'],['K. Raghavendra Rao','Singeetam'],
+    ['Sekhar Kammula','Mani Ratnam'],['A. R. Murugadoss','Shankar'],
+    ['Sriram Adittya','Venkat Prabhu'],['Teja','Pavan Sadineni'],
+    ['Lawrence','Sundar C'],['Aswini Dutt','Dil Raju'],
+  ]},
+  singers:{name:'🎤 Telugu Singers',pairs:[
+    ['SP Balasubrahmanyam','P. Susheela'],['Ghantasala','S. Janaki'],
+    ['Sid Sriram','Anirudh Ravichander'],['Armaan Malik','Harika Narayan'],
+    ['Karthik','Shaan'],['Sunitha Upadrashta','Chitra'],
+    ['Mangli','Hamsika Iyer'],['Yazin Nizar','Geetha Madhuri'],
+    ['Rahul Sipligunj','Lalitha Induri'],['Prudhvi Chandra','Revanth'],
+    ['Pranavi Atreya','Deepika'],['Anurag Kulkarni','Shakthisree Gopalan'],
+    ['Anjana Sowmya','Bindu Rajasekhar'],['Hemachandra','Madhu Priya'],
+    ['Devi Sri Prasad','SS Thaman'],['MM Keeravani','Mickey J Meyer'],
+    ['SP Charan','Kalyani Nair'],['Sai Charan','Mohana Bhogaraju'],
+    ['Dhanunjay','Krishna Chaitanya'],['Tippu','Benny Dayal'],
+    ['Kousalya','Nanditha'],['Udit Narayan','Kumar Sanu'],
+    ['Vishwa','Sri Krishna'],['Shravan','Srinivas'],
+    ['Ramya Behara','Geetha Madhuri'],['Pranavi','Sahiti'],
+    ['Balasubrahmanyam SPB','Vani Jairam'],['Malgudi Subha','Sujatha'],
+  ]},
+  songs:{name:'🎵 Telugu Songs',pairs:[
+    ['Samajavaragamana','Inkem Inkem Inkem Kaavaale'],['Buttabomma','Butta Bomma'],
+    ['Naatu Naatu','Komuram Bheemudo'],['Oo Antava','Srivalli'],
+    ['Ramuloo Ramulaa','Jaathi Ratnalu Title'],['Rowdy Baby','Vaathi Coming'],
+    ['Seeti Maar','Jigelu Rani'],['Priyathama Priyathama','Ye Manasaa'],
+    ['Vachinde','Vacchindhe Nee Kosam'],['Bullet Bullet','Dhol Baaje'],
+    ['Kalyanam Kalyanam','Pellichoopulu Song'],['Oh Baby','Ammammagarillu'],
+    ['Nuvvele Nuvvele','Roja Roja'],['Yellamma','Kommu Vesi'],
+    ['Ninnu Kori','Adiga Adiga'],['Pilla Raa','Cheppave Chirugaali'],
+    ['Vaada Vaada','Vaaname Ellai'],['Manmadha','Manmadhuda Ante'],
+    ['Premisthe','Oye Oye'],['Hora Taara','Hora Taara 2'],
+    ['Nuvvu Nuvvu','Ninu Choodaka Nenundalenu'],['Oka Laila Kosam','Oka Telugu Ammayi'],
+    ['Kannaana Kanney','Uyire Uyire'],['Oka Maru','Oka Chance'],
+    ['Nee Jathaga','Mouname Palikindi'],['Anukokunda Oka Roju','Nenunnanu'],
+    ['Ee Hrudayam','Ee Manassu'],['Bale Bale Magadivoy','Hello Guru Prema Kosame'],
+    ['Rangamma Mangamma','Nuvve Nuvve'],['Josh Josh','Bullet Song'],
+    ['Srivalli Srivalli','Flower Flower'],['Dosti Dosti','Bro Bro'],
+  ]},
+  lyrics:{name:'📝 Song Lyrics',pairs:[
+    ['Tholi Preme Tholi Preme','Dhooram Dhooram Ga'],
+    ['Oo Solriya Oo Solriya','En Jeevan Jeevan'],
+    ['Nee Kallalona Naa Kalalu','Nee Navvulona Naa Nenunna'],
+    ['Manalo Oka Mani','Vinalo Oka Vini'],
+    ['Jallu Jalluna Padindi','Vana Vana Vana Vana'],
+    ['Ee Prema Neeye','Adi Pichi Chesindi'],
+    ['Ye Pakkana Koochinaanu','Ninne Choodali Ante'],
+    ['Chinni Chinni Aasa','Roja Puvva'],
+    ['Oka Maru Chuse','Vere Gundello'],
+    ['Aa Ante Amalapuram','Oo Ante Ongole'],
+    ['Nee Paata Vinaali','Nee Mukhamu Choovali'],
+    ['Nuvvu Leka Nenu Lenu','Nuvvante Naake Ishtam'],
+    ['Kannullo Nee Roopam','Manasulo Nee Moham'],
+    ['Adugaduguna Nee Meeda','Preminchaali Ante'],
+    ['Tholi Choopu Tho','Malli Tholikadhaa'],
+    ['Veyyi Janmala','Veyyi Kala'],
+    ['Evvari Evvari','Lokam Lokam'],
+    ['Ee Velalo Ninu','Kanulara Choosi'],
+    ['Jabiliki Vennela Thodu','Niluvuna Nilavaali'],
+    ['Ee Roja Nee Roja','Oo Cheliya'],
+  ]},
+};
+
+// ============================================================
+//  TELUGU TRANSLATIONS
+// ============================================================
+const TELUGU = {
+  // Animals
+  'Tiger':'పులి','Lion':'సింహం','Elephant':'ఏనుగు','Rhinoceros':'ఖడ్గమృగం',
+  'Parrot':'చిలుక','Mynah Bird':'మైనా పక్షి','Cow':'ఆవు','Buffalo':'గేదె',
+  'Horse':'గుర్రం','Donkey':'గాడిద','Crocodile':'మొసలి','Alligator':'అలిగేటర్',
+  'Peacock':'నెమలి','Cobra':'నాగుపాము','Monitor Lizard':'అలుగు పందికొక్కు',
+  'Deer':'జింక','Bear':'ఎలుగుబంటి','Wolf':'తోడేలు','Camel':'ఒంటె',
+  'Giraffe':'జిరాఫీ','Monkey':'కోతి','Eagle':'గరుడపక్షి','Crow':'కాకి',
+  'Sparrow':'గువ్వపక్షి','Pigeon':'పావురం','Bee':'తేనెటీగ','Ant':'చీమ',
+  'Butterfly':'సీతాకోకచిలుక','Frog':'కప్ప','Shark':'సొర చేప','Scorpion':'తేలు',
+  'Python':'అజగరం','Chameleon':'వర్ణమారే పల్లి','Antelope':'కురంగం',
+  'Chimpanzee':'చింపాంజీ','Vulture':'రాబందు','Kingfisher':'రాజుపిట్ట',
+  'Heron':'కొంగ','Toad':'బెంగ','Porcupine':'ముళ్ళపంది','Hedgehog':'ముళ్ళ ఉడుత',
+  'Mongoose':'ముంగిస','Weasel':'ముంగిస జాతి','Wild Boar':'అడవి పంది',
+  'Warthog':'అడవి పంది రకం','Jackal':'నక్క','Fox':'నక్క','Sloth Bear':'ఎలుగు జాతి',
+  'Sun Bear':'అడవి ఎలుగు','Flamingo':'ఫ్లమింగో','Pelican':'పెలికాన్',
+  'Octopus':'అష్టభుజి','Squid':'సీపియా','Whale':'తిమింగలం','Raven':'పెద్ద కాకి',
+  'Moth':'రెక్కల పురుగు','Spider':'సాలెపురుగు','Termite':'చెదపురుగు','Wasp':'కందిరీగ',
+  // Food
+  'Pesarattu':'పెసరట్టు','Dosa':'దోశ','Gongura Pachadi':'గోంగూర పచ్చడి',
+  'Tomato Chutney':'టమాటో చట్నీ','Pulihora':'పులిహోర','Lemon Rice':'నిమ్మకాయ అన్నం',
+  'Biryani':'బిర్యానీ','Pulao':'పులావ్','Idly':'ఇడ్లీ','Vada':'వడ',
+  'Sambar':'సాంబారు','Rasam':'రసం','Pongal':'పొంగల్','Khichdi':'ఖిచ్డీ',
+  'Gutti Vankaya':'గుత్తి వంకాయ','Bendakaya Fry':'బెండకాయ వేపుడు',
+  'Mirchi Bajji':'మిరపకాయ బజ్జి','Punugulu':'పునుగులు',
+  'Bobbatlu':'బొబ్బట్లు','Kajjikayalu':'కాజికాయలు',
+  'Aavakaya Pickle':'ఆవకాయ పచ్చడి','Gongura Pickle':'గోంగూర పచ్చడి',
+  'Curd Rice':'పెరుగు అన్నం','Tomato Rice':'టమాటో అన్నం',
+  'Poori':'పూరి','Chapati':'చపాతీ','Upma':'ఉప్మా',
+  'Boorelu':'బూరెలు','Garelu':'గారెలు','Jilebi':'జిలేబి',
+  'Chegodilu':'చేగోడీలు','Murukku':'మురుక్కు',
+  'Chicken Curry':'చికెన్ కూర','Mutton Curry':'మటన్ కూర',
+  'Hyderabadi Biryani':'హైదరాబాదీ బిర్యానీ','Ambur Biryani':'అంబూర్ బిర్యానీ',
+  'Paramannam':'పరమాన్నం','Semiya Payasam':'సేమియా పాయసం','Mysore Pak':'మైసూర్ పాక్',
+  'Royyala Curry':'రొయ్యల కూర','Chepa Pulusu':'చేప పులుసు',
+  'Pachi Pulusu':'పచ్చి పులుసు','Mamidikaya Pappu':'మామిడికాయ పప్పు',
+  'Chintapandu Pulihora':'చింతపండు పులిహోర','Coconut Rice':'కొబ్బరి అన్నం',
+  'Kobbari Mithai':'కొబ్బరి మిఠాయి','Bellam Gavvalu':'బెల్లం గవ్వలు',
+  'Rava Laddu':'రవ్వ లడ్డూ','Besan Laddu':'బేసన్ లడ్డూ',
+  'Pulasa Fish':'పులస చేప','Rohu Fish':'రోహు చేప',
+  'Natu Kodi Pulusu':'నాటు కోడి పులుసు','Boneless Chicken':'బోన్‌లెస్ చికెన్',
+  'Pesarattu Upma':'పెసరట్టు ఉప్మా','Rava Dosa':'రవ్వ దోశ',
+  'Avial':'అవియల్','Kootu':'కూటు','Uthappam':'ఉత్తప్పం','Paddu':'పడ్డు',
+  'Idli Upma':'ఇడ్లీ ఉప్మా',
+  // Movies
+  'Baahubali':'బాహుబలి','Magadheera':'మగధీర','Pushpa':'పుష్ప','Arya':'అర్య',
+  'RRR':'ఆర్ఆర్ఆర్','Sye Raa':'సై రా','Pokiri':'పోకిరి','Businessman':'బిజినెస్మ్యాన్',
+  'Temper':'టెంపర్','Dookudu':'దూకుడు','Jalsa':'జల్సా','Julayi':'జులాయి',
+  'Akhanda':'అఖండ','Simha':'సింహ','Bimbisara':'బింబిసార','Yamadonga':'యమదొంగ',
+  'Kushi':'కుషి','Geetanjali':'గీతాంజలి','Sarrainodu':'సర్రైనోడు','Naayak':'నాయక్',
+  'Okkadu':'ఒక్కడు','Athadu':'అతడు','Vakeel Saab':'వకీల్ సాబ్','Jathi Ratnalu':'జాతి రత్నాలు',
+  'Devara':'దేవర','Salaar':'సలార్','Sita Ramam':'సీత రామం','Krack':'క్రాక్',
+  'Mahanati':'మహానటి','Jersey':'జెర్సీ','Geetha Govindam':'గీత గోవిందం',
+  'Arjun Reddy':'అర్జున్ రెడ్డి','Rangasthalam':'రంగస్థలం','Maharshi':'మహర్షి',
+  'Bharat Ane Nenu':'భారత్ అనే నేను','Srimanthudu':'శ్రీమంతుడు',
+  'Nannaku Prematho':'నన్నకు ప్రేమతో','Mirchi':'మిర్చి',
+  'Shyam Singha Roy':'శ్యామ్ సింహ రాయ్','Dhamaka':'ధమాక',
+  'Most Eligible Bachelor':'మోస్ట్ ఎలిజిబుల్ బ్యాచిలర్','Love Story':'లవ్ స్టోరీ',
+  'Fidaa':'ఫిదా','Pelli Choopulu':'పెళ్ళి చూపులు','Ee Nagaraniki Emaindi':'ఈ నగరానికి ఏమైంది',
+  'Aravindha Sametha':'అరవింద సమేత','F2':'ఎఫ్2','F3':'ఎఫ్3',
+  'Son of Satyamurthy':'సత్యమూర్తి కొడుకు','Guntur Kaaram':'గుంటూర్ కారం',
+  'Bhola Shankar':'భోళా శంకర్','Dasara':'దసర','Waltair Veerayya':'వాల్తేర్ వీరయ్య',
+  'Karthikeya 2':'కార్తికేయ 2','Bimbisara 2':'బింబిసార 2',
+  'Agent Sai Srinivasa':'ఏజెంట్ సాయి శ్రీనివాస','Ori Devuda':'ఓరి దేవుడా',
+  'Chal Mohan Ranga':'చల్ మోహన్ రంగా','Bheemla Nayak':'భీమ్లా నాయక్',
+  'Sardar':'సర్దార్','Ante Sundaraniki':'అంతే సుందరానికి','Bangarraju':'బంగార్రాజు',
+  'Kabir Singh':'కబీర్ సింగ్',
+  // Actors
+  'Allu Arjun':'అల్లు అర్జున్','Jr NTR':'జూనియర్ ఎన్టీఆర్','Mahesh Babu':'మహేష్ బాబు',
+  'Prabhas':'ప్రభాస్','Ram Charan':'రామ్ చరణ్','Varun Tej':'వరుణ్ తేజ్',
+  'Chiranjeevi':'చిరంజీవి','Balakrishna':'బాలకృష్ణ','Pawan Kalyan':'పవన్ కళ్యాణ్',
+  'Venkatesh':'వెంకటేష్','Nani':'నాని','Naga Chaitanya':'నాగ చైతన్య',
+  'Vijay Deverakonda':'విజయ్ దేవరకొండ','Adivi Sesh':'ఆదివి శేష్',
+  'Ravi Teja':'రవి తేజ','Sunil':'సునీల్','Nagarjuna':'నాగార్జున',
+  'Siddharth':'సిద్ధార్థ','Sharwanand':'శర్వానంద్','Brahmanandam':'బ్రహ్మానందం',
+  'Naveen Polishetty':'నవీన్ పోలిశెట్టి','Vishwak Sen':'విశ్వక్ సేన్',
+  'Nikhil':'నిఖిల్','Priyadarshi':'ప్రియదర్శి','Ali':'అలీ','Mohan Babu':'మోహన్ బాబు',
+  'Sonu Sood':'సోను సూద్','Tarun':'తరుణ్','Manchu Manoj':'మంచు మనోజ్',
+  'Manchu Vishnu':'మంచు విష్ణు','Gopichand':'గోపీచంద్','Srikanth':'శ్రీకాంత్',
+  'Naga Shaurya':'నాగ శౌర్య','Karthikeya':'కార్తికేయ',
+  'Aadhi Pinisetty':'ఆది పినిశెట్టి','Bellamkonda Sai':'బెల్లంకొండ సాయి',
+  'Sree Vishnu':'శ్రీ విష్ణు','Rahul Ramakrishna':'రాహుల్ రామకృష్ణ',
+  'Vennela Kishore':'వెన్నెల కిషోర్','Posani':'పోసాని','Rohit':'రోహిత్',
+  'Sandeep Kishore':'సందీప్ కిషోర్','Sushanth':'సుశాంత్','Aakash Puri':'ఆకాష్ పూరి',
+  'Sapthagiri':'సప్తగిరి','Tagubothu Ramesh':'తాగుబోతు రమేష్',
+  'MS Narayana':'ఎంఎస్ నారాయణ','Dharmavarapu':'ధర్మవరపు',
+  'Kota Srinivasa Rao':'కోట శ్రీనివాస రావు','Prudhviraj':'ప్రుద్వీరాజ్',
+  // Actresses
+  'Samantha':'సమంత','Rashmika Mandanna':'రష్మిక మందన్న',
+  'Pooja Hegde':'పూజా హెగ్డే','Anushka Shetty':'అనుష్క శెట్టి',
+  'Tamannaah':'తమన్నా','Kajal Aggarwal':'కాజల్ అగర్వాల్','Trisha':'త్రిష',
+  'Sai Pallavi':'సాయి పల్లవి','Keerthi Suresh':'కీర్తి సురేష్',
+  'Sreeleela':'శ్రీలీల','Rakul Preet':'రాకుల్ ప్రీత్',
+  'Kiara Advani':'కియారా అద్వానీ','Nayanthara':'నయన్తార',
+  'Deepika Padukone':'దీపికా పదుకొనే','Anu Emmanuel':'అను ఎమాన్యుయేల్',
+  'Shanvi Srivastava':'శాన్వి శ్రీవాస్తవ','Payal Rajput':'పాయల్ రాజ్‌పుత్',
+  'Mehreen Pirzada':'మెహ్రీన్ పిర్జాదా','Catherine Tresa':'కేథరిన్ ట్రెస',
+  'Mannara Chopra':'మన్నారా చోప్రా','Regina Cassandra':'రెజీనా కాసాండ్రా',
+  'Ritu Varma':'రితు వర్మ','Nabha Natesh':'నభా నటేష్','Niddhi Agerwal':'నిద్ధి అగర్వాల్',
+  'Pragya Jaiswal':'ప్రగ్య జైస్వాల్','Aditi Rao Hydari':'అదితి రావు హైదరి',
+  'Hebah Patel':'హేబా పటేల్','Lavanya Tripathi':'లావణ్య త్రిపాఠి',
+  'Deeksha Seth':'దీక్ష సేత్','Hamsa Nandini':'హంస నందిని',
+  'Revathi':'రేవతి','Meena':'మీనా','Bhanupriya':'భానుప్రియ',
+  'Suhasini':'సుహాసిని','Soundarya':'సౌందర్య','Ramya Krishna':'రమ్యకృష్ణ',
+  'Mumaith Khan':'ముమైత్ ఖాన్','Rachana':'రచన',
+  'Nikki Tamboli':'నిక్కీ తంబోలి','Shraddha Das':'శ్రద్ధ దాస్',
+  // Directors
+  'SS Rajamouli':'ఎస్ఎస్ రాజమౌళి','Trivikram Srinivas':'త్రివిక్రమ్ శ్రీనివాస్',
+  'Sukumar':'సుకుమార్','Boyapati Srinu':'బోయపాటి శ్రీను',
+  'Puri Jagannadh':'పూరి జగన్నాధ్','Koratala Siva':'కొరటాల శివ',
+  'Harish Shankar':'హరీష్ శంకర్','Vamshi Paidipally':'వంశీ పైడిపల్లి',
+  'Anil Ravipudi':'అనిల్ రవిపూడి','Maruthi':'మారుతి','Teja':'తేజ',
+  'Sekhar Kammula':'శేఖర్ కమ్ముల','Hanu Raghavapudi':'హను రాఘవపూడి',
+  'Sandeep Reddy Vanga':'సందీప్ రెడ్డి వంగ',
+  'Dasari Narayana Rao':'దాసరి నారాయణ రావు','K. Viswanath':'కె. విశ్వనాథ్',
+  'S. V. Krishna Reddy':'ఎస్.వి. కృష్ణ రెడ్డి','Jandhyala':'జంధ్యాల',
+  'Raghavendra Rao':'రాఘవేంద్ర రావు','Bapu Films':'బాపు ఫిల్మ్స్',
+  'Ramesh Varma':'రమేష్ వర్మ','Srinu Vaitla':'శ్రీను వైట్ల',
+  'Buchi Babu Sana':'బుచ్చి బాబు సాన','Chandoo Mondeti':'చందూ మొండేటి',
+  'Nag Ashwin':'నాగ్ అశ్విన్','Vi Anand':'వీ ఆనంద్','Mahesh Babu P':'మహేష్ బాబు పి',
+  'Deva Katta':'దేవ కట్ట','Rajiv Kanakala':'రాజీవ్ కనకాల',
+  'Mohan Krishna Indraganti':'మోహన్ కృష్ణ ఇంద్రగంటి','Krish Jagarlamudi':'కృష్ జగర్లమూడి',
+  'Nandini Reddy':'నందిని రెడ్డి','Revathi Pillai':'రేవతి పిళ్ళై',
+  'K. Raghavendra Rao':'కె. రాఘవేంద్ర రావు','Singeetam':'సింగీతం',
+  'Mani Ratnam':'మణి రత్నం','A. R. Murugadoss':'ఏ.ఆర్. మురుగదాస్','Shankar':'శంకర్',
+  'Sriram Adittya':'శ్రీరామ్ ఆదిత్య','Venkat Prabhu':'వెంకట్ ప్రభు',
+  'Pavan Sadineni':'పవన్ సాదినేని','Lawrence':'లారెన్స్','Sundar C':'సుందర్ సి',
+  'Aswini Dutt':'అశ్విని దత్త్','Dil Raju':'దిల్ రాజు',
+  // Singers
+  'SP Balasubrahmanyam':'ఎస్పీ బాలసుబ్రహ్మణ్యం','P. Susheela':'పి. సుశీల',
+  'Ghantasala':'ఘంటసాల','S. Janaki':'ఎస్. జానకి',
+  'Sid Sriram':'సిద్ శ్రీరామ్','Sunitha Upadrashta':'సునీత ఉపద్రష్ట',
+  'Mangli':'మంగ్లి','Rahul Sipligunj':'రాహుల్ సిప్లిగంజ్',
+  'Hemachandra':'హేమచంద్ర','Devi Sri Prasad':'దేవి శ్రీ ప్రసాద్',
+  'SS Thaman':'ఎస్ఎస్ థమన్','MM Keeravani':'ఎంఎం కీరవాణి',
+  'Anurag Kulkarni':'అనురాగ్ కులకర్ణి','Yazin Nizar':'యజిన్ నిజార్',
+  'Anirudh Ravichander':'అనిరుధ్ రవిచందర్','Armaan Malik':'అర్మాన్ మాలిక్',
+  'Harika Narayan':'హారిక నారాయణ్','Karthik':'కార్తీక్','Shaan':'షాన్',
+  'Chitra':'చిత్ర','Hamsika Iyer':'హమ్సిక అయ్యర్','Lalitha Induri':'లలిత ఇందూరి',
+  'Prudhvi Chandra':'ప్రుద్వి చంద్ర','Revanth':'రేవంత్',
+  'Pranavi Atreya':'ప్రణవి అత్రేయ','Deepika':'దీపిక',
+  'Shakthisree Gopalan':'శక్తిశ్రీ గోపాలన్','Anjana Sowmya':'అంజన సౌమ్య',
+  'Bindu Rajasekhar':'బిందు రాజశేఖర్','Madhu Priya':'మధు ప్రియ',
+  'Mickey J Meyer':'మికీ జె మేయర్','SP Charan':'ఎస్పీ చరణ్','Kalyani Nair':'కళ్యాణి నాయర్',
+  'Sai Charan':'సాయి చరణ్','Mohana Bhogaraju':'మోహన బోగరాజు',
+  'Dhanunjay':'ధనంజయ్','Krishna Chaitanya':'కృష్ణ చైతన్య',
+  'Tippu':'టిప్పు','Benny Dayal':'బెన్నీ దయాల్',
+  'Kousalya':'కౌశల్య','Nanditha':'నందిత','Udit Narayan':'ఉదిత్ నారాయణ్',
+  'Kumar Sanu':'కుమార్ సాను','Vishwa':'విశ్వ','Sri Krishna':'శ్రీ కృష్ణ',
+  'Shravan':'శ్రావణ్','Srinivas':'శ్రీనివాస్','Ramya Behara':'రమ్య బెహర',
+  'Geetha Madhuri':'గీత మాధురి','Pranavi':'ప్రణవి','Sahiti':'సాహితి',
+  'Balasubrahmanyam SPB':'బాలసుబ్రహ్మణ్యం ఎస్పీబి','Vani Jairam':'వాణి జయరాం',
+  'Malgudi Subha':'మళ్ళగూడి సుభ','Sujatha':'సుజాత',
+  // Songs
+  'Samajavaragamana':'సామజవరగమన','Inkem Inkem Inkem Kaavaale':'ఇంకెం ఇంకెం కావాలే',
+  'Buttabomma':'బట్టబొమ్మ','Butta Bomma':'బుట్టబొమ్మ',
+  'Naatu Naatu':'నాటు నాటు','Komuram Bheemudo':'కొమురం భీముడో',
+  'Oo Antava':'ఓ అంటావా','Srivalli':'శ్రీవల్లి',
+  'Ramuloo Ramulaa':'రాములో రాముల','Jaathi Ratnalu Title':'జాతి రత్నాలు టైటిల్',
+  'Rowdy Baby':'రౌడీ బేబీ','Vaathi Coming':'వాత్తి కమింగ్',
+  'Seeti Maar':'సీటీ మార్','Jigelu Rani':'జిగెలు రాణి',
+  'Priyathama Priyathama':'ప్రియతమ ప్రియతమ','Ye Manasaa':'యే మనసా',
+  'Vachinde':'వచ్చింది','Vacchindhe Nee Kosam':'వచ్చింది నీ కోసం',
+  'Bullet Bullet':'బులెట్ బులెట్','Dhol Baaje':'ఢోల్ బాజే',
+  'Kalyanam Kalyanam':'కళ్యాణం కళ్యాణం','Pellichoopulu Song':'పెళ్ళిచూపులు పాట',
+  'Oh Baby':'ఓహ్ బేబీ','Ammammagarillu':'అమ్మమ్మగారిల్లు',
+  'Nuvvele Nuvvele':'నువ్వేలే నువ్వేలే','Roja Roja':'రోజా రోజా',
+  'Yellamma':'యెల్లమ్మ','Kommu Vesi':'కొమ్ము వేసి',
+  'Ninnu Kori':'నిన్ను కోరి','Adiga Adiga':'అడిగా అడిగా',
+  'Pilla Raa':'పిల్ల రా','Cheppave Chirugaali':'చెప్పవే చిరుగాలి',
+  'Vaada Vaada':'వాదా వాదా','Vaaname Ellai':'వానమే ఎల్లై',
+  'Manmadha':'మన్మధ','Manmadhuda Ante':'మన్మధుడా అంటే',
+  'Premisthe':'ప్రేమిస్తే','Oye Oye':'ఓయే ఓయే',
+  'Hora Taara':'హోర తారా','Hora Taara 2':'హోర తారా 2',
+  'Nuvvu Nuvvu':'నువ్వు నువ్వు','Ninu Choodaka Nenundalenu':'నిను చూడక నేనుండలేను',
+  'Oka Laila Kosam':'ఒక లైల కోసం','Oka Telugu Ammayi':'ఒక తెలుగు అమ్మాయి',
+  'Kannaana Kanney':'కణ్ణాన కణ్ణే','Uyire Uyire':'ఉయిరే ఉయిరే',
+  'Oka Maru':'ఒక మారు','Oka Chance':'ఒక చాన్స్',
+  'Nee Jathaga':'నీ జతగా','Mouname Palikindi':'మౌనమే పలికింది',
+  'Anukokunda Oka Roju':'అనుకోకుండా ఒక రోజు','Nenunnanu':'నేనున్నాను',
+  'Ee Hrudayam':'ఈ హృదయం','Ee Manassu':'ఈ మనసు',
+  'Bale Bale Magadivoy':'బాలే బాలే మగదివోయ్','Hello Guru Prema Kosame':'హలో గురు ప్రేమ కోసమే',
+  'Rangamma Mangamma':'రంగమ్మ మంగమ్మ','Nuvve Nuvve':'నువ్వే నువ్వే',
+  'Josh Josh':'జోష్ జోష్','Srivalli Srivalli':'శ్రీవల్లి శ్రీవల్లి',
+  'Flower Flower':'ఫ్లవర్ ఫ్లవర్','Dosti Dosti':'దోస్తీ దోస్తీ','Bro Bro':'బ్రో బ్రో',
+  // Song Lyrics
+  'Tholi Preme Tholi Preme':'తొలి ప్రేమ తొలి ప్రేమ','Dhooram Dhooram Ga':'దూరం దూరంగా',
+  'Oo Solriya Oo Solriya':'ఓ సొల్రియా ఓ సొల్రియా','En Jeevan Jeevan':'ఎన్ జీవన్ జీవన్',
+  'Nee Kallalona Naa Kalalu':'నీ కళ్ళలోన నా కలలు','Nee Navvulona Naa Nenunna':'నీ నవ్వులోన నా నేనున్నా',
+  'Manalo Oka Mani':'మనలో ఒక మణి','Vinalo Oka Vini':'వినలో ఒక విని',
+  'Jallu Jalluna Padindi':'జల్లు జల్లున పడింది','Vana Vana Vana Vana':'వన వన వన వన',
+  'Ee Prema Neeye':'ఈ ప్రేమ నీయే','Adi Pichi Chesindi':'అది పిచ్చి చేసింది',
+  'Ye Pakkana Koochinaanu':'యే పక్కన కూచినాను','Ninne Choodali Ante':'నిన్నే చూడాలి అంటే',
+  'Chinni Chinni Aasa':'చిన్ని చిన్ని ఆశ','Roja Puvva':'రోజా పువ్వా',
+  'Oka Maru Chuse':'ఒక మారు చూసే','Vere Gundello':'వేరే గుండెల్లో',
+  'Aa Ante Amalapuram':'ఆ అంటే అమలాపురం','Oo Ante Ongole':'ఓ అంటే ఒంగోలు',
+  'Nee Paata Vinaali':'నీ పాట వినాలి','Nee Mukhamu Choovali':'నీ ముఖము చూవాలి',
+  'Nuvvu Leka Nenu Lenu':'నువ్వు లేక నేను లేను','Nuvvante Naake Ishtam':'నువ్వంటే నాకే ఇష్టం',
+  'Kannullo Nee Roopam':'కన్నుల్లో నీ రూపం','Manasulo Nee Moham':'మనసులో నీ మోహం',
+  'Adugaduguna Nee Meeda':'అడుగడుగున నీ మీద','Preminchaali Ante':'ప్రేమించాలి అంటే',
+  'Tholi Choopu Tho':'తొలి చూపు తో','Malli Tholikadhaa':'మళ్ళీ తొలికదా',
+  'Veyyi Janmala':'వేయి జన్మల','Veyyi Kala':'వేయి కళ',
+  'Evvari Evvari':'ఎవ్వరి ఎవ్వరి','Lokam Lokam':'లోకం లోకం',
+  'Ee Velalo Ninu':'ఈ వేళలో నిను','Kanulara Choosi':'కనులారా చూసి',
+  'Jabiliki Vennela Thodu':'జాబిలికి వెన్నెల తోడు','Niluvuna Nilavaali':'నిలువున నిలవాలి',
+  'Ee Roja Nee Roja':'ఈ రోజా నీ రోజా','Oo Cheliya':'ఓ చెలియా',
+  // Memes
+  'Thaggedhe Le':'తగ్గేదేలే','Taggedi Le':'తగ్గేది లే','Jabardasth':'జబర్దస్త్',
+  'Extra Jabardasth':'ఎక్స్ట్రా జబర్దస్త్','Bujji':'బుజ్జి','Anna':'అన్నా',
+  'Mass Maharaja':'మాస్ మహారాజా','Power Star':'పవర్ స్టార్',
+  'Pushpa Fire':'పుష్ప ఫైర్','Pushpa Flower':'పుష్ప ఫ్లవర్',
+  'Rolex':'రోలెక్స్','Kya Scene Hai':'క్యా సీన్ హై','Enti Scene Ra':'ఏంటి సీన్ రా',
+  'Nenu Rowdy Ne':'నేను రౌడీ నే','Nenu Hero Ne':'నేను హీరో నే',
+  'Scene Potundi':'సీన్ పోతుంది','Scene Ledu':'సీన్ లేదు',
+  'Bro Pellaadtha':'బ్రో పెళ్ళాడతా','Bro Ledu':'బ్రో లేదు',
+  'Pakka Commercial':'పక్క కమర్షియల్','Pakka Local':'పక్క లోకల్',
+  'Oka Laila':'ఒక లైల','Oka Priya':'ఒక ప్రియ',
+  'Naatu Remix':'నాటు రిమిక్స్','Pushpa Pushpa':'పుష్ప పుష్ప',
+  'Pedda Babu':'పెద్ద బాబు','Chinna Babu':'చిన్న బాబు',
+  'Tension Padaku':'టెన్షన్ పడకు','Chill Bro':'చిల్ బ్రో',
+  'Abbayi Bagunnadu':'అబ్బాయి బాగున్నాడు','Ammaayi Bagundi':'అమ్మాయి బాగుంది',
+  'Item Number':'ఐటెం నంబర్','Mass Number':'మాస్ నంబర్',
+  'Swag Se Karenge':'స్వాగ్ సే కరేంగే','Attitude Tho':'అటిట్యూడ్ తో',
+  'Nuvvu Naaku Nachchav':'నువ్వు నాకు నచ్చావ్','Nachchav Nachchav':'నచ్చావ్ నచ్చావ్',
+  'Full On Mass':'ఫుల్ ఆన్ మాస్','Full On Class':'ఫుల్ ఆన్ క్లాస్',
+  'Power Power':'పవర్ పవర్','Saami Saami':'సామి సామి',
+  'Idhi Nijama':'ఇది నిజమా','Unnadhi Kadha':'ఉన్నది కదా',
+  'Keka Keka':'కేక కేక','Nailed It':'నైల్డ్ ఇట్',
+  'Maccha':'మచ్చా','Mawa':'మావా','Boss':'బాస్','Rowdy':'రౌడీ','Gunda':'గుండా',
+  'Hero':'హీరో','Zero':'జీరో','Oka Roju':'ఒక రోజు','Oka Rathi':'ఒక రాతి',
+  'Potti Hero':'పొట్టి హీరో','Peddha Hero':'పెద్ద హీరో',
+  'Srikanth':'శ్రీకాంత్',
+};
+
+// ============================================================
+//  STATE
+// ============================================================
+let G = {
+  players:[],
+  sett:{
+    nImp:1, mrW:false, clue:true, clueTime:30, clueRds:1,
+    vote:'individual', packs:['tmovies','tfood','animals','memes'], custom:[],
+    prefMode:false,
+    prefOrder:['tmovies','tfood','animals','memes'],
+    prefIdx:0,
+    impMode:'similar'  // 'similar' = impostor gets related word | 'none' = impostor gets no word
+  },
+  rd:null, lb:{}
+};
+let _cdTimer=null, _clTimer=null, _curVoteSel=-1;
+let DB_PLAYERS=[];
+
+// ============================================================
+//  INIT
+// ============================================================
+(function init(){
+  try{ const s=localStorage.getItem('imp_lb'); if(s) G.lb=JSON.parse(s); }catch(e){}
+  try{ const d=localStorage.getItem('imp_players'); if(d) DB_PLAYERS=JSON.parse(d); }catch(e){}
+  renderPacks();
+  togClue();
+})();
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function go(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  if(id==='leaderboard') renderLB();
+  if(id==='players') renderSaved();
+}
+
+// ============================================================
+//  PLAYERS SCREEN
+// ============================================================
+function addPlayer(){
+  const inp=document.getElementById('pinp');
+  const n=inp.value.trim();
+  if(!n) return;
+  if(G.players.find(p=>p.toLowerCase()===n.toLowerCase())){alert('Name already added!');return;}
+  if(G.players.length>=15){alert('Max 15 players!');return;}
+  G.players.push(n);
+  addToDB(n);
+  inp.value='';
+  renderPlayers();
+  renderSaved();
+  inp.focus();
+}
+
+// FEATURE 1: DYNAMIC IMPOSTOR SCALING
+function removePlayer(i){
+  G.players.splice(i,1);
+  renderPlayers();
+  const max = Math.max(1, Math.floor(G.players.length / 2));
+  if (G.sett.nImp > max) {
+    G.sett.nImp = max;
+    document.getElementById('imp-num').textContent = max;
+  }
+}
+
+function renderPlayers(){
+  document.getElementById('plist').innerHTML=G.players.map((p,i)=>`
+    <div class="pitem">
+      <div class="pnum">${i+1}</div>
+      <div class="pname">${p}</div>
+      <button class="prm" onclick="removePlayer(${i})">×</button>
+    </div>`).join('');
+  const ok=G.players.length>=3;
+  document.getElementById('pnext').disabled=!ok;
+  document.getElementById('pwarn').style.display=(!ok&&G.players.length>0)?'block':'none';
+}
+
+// ============================================================
+//  PLAYER DATABASE
+// ============================================================
+function saveDB(){try{localStorage.setItem('imp_players',JSON.stringify(DB_PLAYERS));}catch(e){}}
+function addToDB(name){if(!DB_PLAYERS.includes(name)){DB_PLAYERS.push(name);saveDB();}}
+function removeFromDB(name){DB_PLAYERS=DB_PLAYERS.filter(n=>n!==name);saveDB();renderSaved();}
+function clearDB(){if(confirm('Remove all saved players?')){DB_PLAYERS=[];saveDB();renderSaved();}}
+
+function addSavedPlayer(name){
+  if(G.players.find(p=>p.toLowerCase()===name.toLowerCase())) return;
+  if(G.players.length>=15){alert('Max 15 players!');return;}
+  G.players.push(name);
+  renderPlayers();
+  renderSaved();
+}
+
+function renderSaved(){
+  const sec=document.getElementById('saved-section');
+  if(!sec) return;
+  const available=DB_PLAYERS.filter(n=>!G.players.find(p=>p.toLowerCase()===n.toLowerCase()));
+  sec.style.display=DB_PLAYERS.length>0?'block':'none';
+  document.getElementById('saved-chips').innerHTML=available.map(n=>`
+    <div style="display:flex;align-items:center;margin-bottom:2px;">
+      <div class="chip" onclick="addSavedPlayer('${n.replace(/'/g,"\\'")}') " style="border-radius:20px 0 0 20px;border-right:none;padding-right:10px;">+ ${n}</div>
+      <button onclick="removeFromDB('${n.replace(/'/g,"\\'")}') " style="padding:8px 10px;border-radius:0 20px 20px 0;border:1.5px solid var(--br);background:var(--s2);color:var(--rd);cursor:pointer;font-size:13px;border-left:none;line-height:1;">×</button>
+    </div>`).join('');
+}
+
+function newGame(){G.players=[];renderPlayers();go('players');}
+
+// ============================================================
+//  SETTINGS SCREEN
+// ============================================================
+function adjImp(d){
+  const max=Math.max(1,Math.floor(G.players.length/2));
+  G.sett.nImp=Math.max(1,Math.min(max,G.sett.nImp+d));
+  document.getElementById('imp-num').textContent=G.sett.nImp;
+}
+function togClue(){
+  const on=document.getElementById('tog-clue').checked;
+  document.getElementById('clue-opts').style.display=on?'block':'none';
+}
+function setVote(v){
+  G.sett.vote=v;
+  document.getElementById('vi-chip').classList.toggle('on',v==='individual');
+  document.getElementById('vt-chip').classList.toggle('on',v==='team');
+  document.getElementById('vdesc').textContent=v==='individual'
+    ?'Each player votes secretly. Results shown after everyone votes.'
+    :'Group discusses openly. One person confirms the final group decision.';
+}
+function renderPacks(){
+  const chips = document.getElementById('pack-chips');
+  if(chips) chips.innerHTML = Object.entries(PACKS).map(([k,p])=>
+    `<div class="chip ${G.sett.packs.includes(k)?'on':''}" onclick="togPack('${k}')">${p.name}</div>`
+  ).join('');
+}
+function togPack(k){
+  const i=G.sett.packs.indexOf(k);
+  if(i===-1){G.sett.packs.push(k);}
+  else{
+    if(G.sett.packs.length<=1&&G.sett.custom.length===0){alert('Select at least one pack!');return;}
+    G.sett.packs.splice(i,1);
+  }
+  renderPacks();
+}
+
+// ---- Preference Order Mode ----
+function togPref(){
+  const on = document.getElementById('tog-pref').checked;
+  G.sett.prefMode = on;
+  document.getElementById('pack-free').style.display = on ? 'none' : 'block';
+  document.getElementById('pack-pref').style.display = on ? 'block' : 'none';
+  document.getElementById('pref-sub').textContent = on
+    ? 'ON · topics play in your chosen order'
+    : 'OFF · freely pick any topics';
+  if(on) renderPrefOrder();
+}
+function renderPrefOrder(){
+  const list = document.getElementById('pref-order-list');
+  const avail = document.getElementById('pref-avail-chips');
+  if(!list || !avail) return;
+  list.innerHTML = G.sett.prefOrder.map((k,i) => {
+    const p = PACKS[k];
+    if(!p) return '';
+    return `<div class="pref-item">
+      <div class="pref-num">${i+1}</div>
+      <div class="pref-name">${p.name}</div>
+      ${i>0?`<button class="pref-btn" onclick="movePrefPack(${i},-1)" title="Move up">▲</button>`:'<span style="width:27px;"></span>'}
+      ${i<G.sett.prefOrder.length-1?`<button class="pref-btn" onclick="movePrefPack(${i},1)" title="Move down">▼</button>`:'<span style="width:27px;"></span>'}
+      <button class="pref-rm" onclick="removePrefPack(${i})">×</button>
+    </div>`;
+  }).join('');
+  const usedKeys = new Set(G.sett.prefOrder);
+  const remaining = Object.entries(PACKS).filter(([k])=>!usedKeys.has(k));
+  avail.innerHTML = remaining.length === 0
+    ? '<div style="font-size:12px;color:var(--mu);padding:4px 0;">All packs added!</div>'
+    : remaining.map(([k,p])=>`<div class="chip" onclick="addPrefPack('${k}')">${p.name}</div>`).join('');
+}
+function addPrefPack(k){
+  if(!G.sett.prefOrder.includes(k)) G.sett.prefOrder.push(k);
+  renderPrefOrder();
+}
+function removePrefPack(i){
+  if(G.sett.prefOrder.length<=1&&G.sett.custom.length===0){alert('Keep at least one topic!');return;}
+  G.sett.prefOrder.splice(i,1);
+  if(G.sett.prefIdx>=G.sett.prefOrder.length) G.sett.prefIdx=0;
+  renderPrefOrder();
+}
+function movePrefPack(i, dir){
+  const arr = G.sett.prefOrder;
+  const j = i + dir;
+  if(j<0||j>=arr.length) return;
+  [arr[i],arr[j]]=[arr[j],arr[i]];
+  renderPrefOrder();
+}
+
+// ---- Impostor Mode ----
+function togImpMode(){
+  const on = document.getElementById('tog-impmode').checked;
+  G.sett.impMode = on ? 'none' : 'similar';
+  document.getElementById('impmode-lbl').textContent = on ? '🕵️ No Word' : '🎭 Similar Word';
+  document.getElementById('impmode-sub').textContent = on
+    ? 'Impostor gets NO word — only knows they are impostor'
+    : 'Impostor gets a related but different word';
+  document.getElementById('impmode-text').innerHTML = on
+    ? 'Impostor gets <b style="color:var(--tx)">no word at all</b>. They only know they are the Impostor. Must bluff entirely by listening to others\' clues — ultra hard mode! 🔥'
+    : 'Impostor receives a <b style="color:var(--tx)">similar but different</b> word. They must blend in carefully — harder to spot but they have something to work with.';
+}
+function addCPair(){
+  const w1=document.getElementById('cw1').value.trim();
+  const w2=document.getElementById('cw2').value.trim();
+  if(!w1||!w2){alert('Enter both words!');return;}
+  G.sett.custom.push([w1,w2]);
+  document.getElementById('cw1').value='';
+  document.getElementById('cw2').value='';
+  renderCPairs();
+}
+function removeCPair(i){G.sett.custom.splice(i,1);renderCPairs();}
+function renderCPairs(){
+  document.getElementById('cpairs').innerHTML=G.sett.custom.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;padding:9px 12px;background:var(--s2);border-radius:10px;">
+      <span style="flex:1;font-size:14px;">${p[0]} ↔ ${p[1]}</span>
+      <button class="prm" onclick="removeCPair(${i})">×</button>
+    </div>`).join('');
+}
+
+// ============================================================
+//  START GAME (WITH ACTIVE PLAYER TRACKING)
+// ============================================================
+function startGame(){
+  G.sett.nImp=parseInt(document.getElementById('imp-num').textContent);
+  G.sett.mrW=document.getElementById('tog-mw').checked;
+  G.sett.clue=document.getElementById('tog-clue').checked;
+  G.sett.clueTime=parseInt(document.getElementById('clue-time').value);
+  G.sett.clueRds=parseInt(document.getElementById('clue-rds').value);
+  
+  let pairs=[];
+  if(G.sett.prefMode && G.sett.prefOrder.length>0){
+    // Pick from the current preferred pack in order
+    const packKey = G.sett.prefOrder[G.sett.prefIdx % G.sett.prefOrder.length];
+    if(PACKS[packKey]) pairs = PACKS[packKey].pairs.slice();
+    // Show which topic is being played
+    G.rd_packName = PACKS[packKey] ? PACKS[packKey].name : '';
+  } else {
+    G.sett.packs.forEach(k=>{if(PACKS[k])pairs=pairs.concat(PACKS[k].pairs);});
+    G.rd_packName = '';
+  }
+  pairs=pairs.concat(G.sett.custom);
+  if(pairs.length===0){alert('No word pairs available! Select a pack or add custom pairs.');return;}
+  
+  const pair=pairs[Math.floor(Math.random()*pairs.length)];
+  const [realW,rawImpW]=pair;
+  // If impMode is 'none', impostor gets null (no word)
+  const impW = G.sett.impMode === 'none' ? null : rawImpW;
+  const displayImpW = rawImpW; // keep original for results screen
+  
+  const n=G.players.length;
+  const idx=shuffle([...Array(n).keys()]);
+  const impIdxs=idx.slice(0,G.sett.nImp);
+  let mwIdx=-1;
+  if(G.sett.mrW&&G.sett.nImp<n-2){
+    mwIdx=idx[G.sett.nImp]; 
+  }
+  
+  const words=G.players.map((_,i)=>{
+    if(i===mwIdx) return null;
+    if(impIdxs.includes(i)) return impW; // null if impMode='none'
+    return realW;
+  });
+  
+  G.rd={
+    realW, impW: displayImpW, impIdxs, mwIdx, words,
+    active: [...Array(n).keys()],
+    revIdx:0, clRound:1, clPIdx:0,
+    votes:{}, voteIdx:0,
+    impMode: G.sett.impMode,
+  };
+  
+  // Advance preference index AFTER successful game start
+  if(G.sett.prefMode && G.sett.prefOrder.length>0){
+    G.sett.prefIdx = (G.sett.prefIdx + 1) % G.sett.prefOrder.length;
+    renderPrefOrder(); // refresh to show updated counter if needed
+  }
+  
+  _curVoteSel=-1;
+  showRevealPass();
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// ============================================================
+//  WORD REVEAL
+// ============================================================
+function showRevealPass(){
+  const i=G.rd.revIdx;
+  document.getElementById('rp-name').textContent=G.players[i];
+  document.getElementById('rp-prog').textContent=`Player ${i+1} of ${G.players.length}`;
+  go('reveal-pass');
+}
+
+function showWord(){
+  const i=G.rd.revIdx;
+  const isImp=G.rd.impIdxs.includes(i);
+  const isMW=i===G.rd.mwIdx;
+  const badge=document.getElementById('wr-badge');
+  const word=document.getElementById('wr-word');
+  const hint=document.getElementById('wr-hint');
+  
+  badge.className='wrbdg';
+  if(isMW){
+    badge.classList.add('wrw');badge.textContent='🕵️ Mr. White';
+    word.textContent='???';
+    document.getElementById('wr-telugu').textContent='';
+    hint.textContent='You have NO word! Listen to others\' clues carefully.';
+  } else if(isImp && G.rd.impMode === 'none'){
+    // No-word impostor mode
+    badge.classList.add('wri');badge.textContent='🎭 IMPOSTOR!';
+    word.textContent='???';
+    document.getElementById('wr-telugu').textContent='';
+    hint.textContent='You have NO word! Listen closely, blend in, and bluff your way through! 🔥';
+  } else if(isImp){
+    badge.classList.add('wri');badge.textContent='🎭 IMPOSTOR!';
+    const w=G.rd.words[i];
+    word.textContent=w;
+    document.getElementById('wr-telugu').textContent=TELUGU[w]?`( ${TELUGU[w]} )`:'';
+    hint.textContent='Your word is DIFFERENT! Give vague clues and blend in.';
+  } else {
+    badge.classList.add('wrc');badge.textContent='✅ Crewmate';
+    const w=G.rd.words[i];
+    word.textContent=w;
+    document.getElementById('wr-telugu').textContent=TELUGU[w]?`( ${TELUGU[w]} )`:'';
+    hint.textContent='Give a clue that shows you know the word — but not too obvious!';
+  }
+  
+  const ring=document.getElementById('cd-ring');
+  ring.className='cdring';
+  ring.textContent=5;
+  document.getElementById('cd-sec').textContent=5;
+  
+  go('reveal-show');
+  startCD();
+}
+
+function startCD(){
+  clearInterval(_cdTimer);
+  let t=5;
+  _cdTimer=setInterval(()=>{
+    t--;
+    document.getElementById('cd-ring').textContent=t;
+    document.getElementById('cd-sec').textContent=t;
+    if(t<=2){document.getElementById('cd-ring').classList.add('urg');}
+    if(t<=0){clearInterval(_cdTimer);hideNow();}
+  },1000);
+}
+
+function hideNow(){
+  clearInterval(_cdTimer);
+  G.rd.revIdx++;
+  if(G.rd.revIdx>=G.players.length){
+    showFirstPlayer();
+    return;
+  }
+  go('reveal-lock');
+  setTimeout(()=>showRevealPass(),1800);
+}
+
+function showFirstPlayer(){
+  const randPos = Math.floor(Math.random() * G.rd.active.length);
+  const firstIdx = G.rd.active[randPos];
+  G.rd.clPIdx = randPos; // clue rounds start from this player
+  document.getElementById('fp-name').textContent = G.players[firstIdx];
+  document.getElementById('fp-emoji').textContent = EMOJIS[firstIdx % EMOJIS.length];
+  go('first-player');
+}
+
+function startFromFirstPlayer(){
+  if(G.sett.clue){
+    G.rd.clRound = 1;
+    showClueTurn(); // clPIdx already set by showFirstPlayer
+  } else {
+    startVote();
+  }
+}
+
+// ============================================================
+//  CLUE ROUNDS
+// ============================================================
+function startClues(){
+  G.rd.clRound=1;G.rd.clPIdx=0;
+  showClueTurn();
+}
+
+const EMOJIS=['👤','🙂','😎','🤩','🤔','😏','🧐','🤗','😄','🥸','🤓','😌','😇','🫡','😊'];
+
+function showClueTurn(){
+  const r=G.rd;
+  const pIdx=r.active[r.clPIdx]; // only show active players
+  const nm=G.players[pIdx];
+  document.getElementById('cl-badge').textContent=`Round ${r.clRound} of ${G.sett.clueRds}`;
+  document.getElementById('cl-pname').textContent=nm;
+  document.getElementById('cl-prog').textContent=`Player ${r.clPIdx+1} of ${r.active.length}`;
+  document.getElementById('cl-emoji').textContent=EMOJIS[pIdx%EMOJIS.length];
+  go('clues');
+  
+  clearInterval(_clTimer);
+  const tw=document.getElementById('cl-timer-wrap');
+  const td=document.getElementById('cl-timer');
+  
+  if(G.sett.clueTime>0){
+    tw.style.display='block';
+    let t=G.sett.clueTime;
+    td.textContent=t;td.className='tdsp';
+    _clTimer=setInterval(()=>{
+      t--;td.textContent=t;
+      if(t<=5)td.className='tdsp urg';
+      if(t<=0){clearInterval(_clTimer);nextClue();}
+    },1000);
+  } else { tw.style.display='none'; }
+}
+
+function nextClue(){
+  clearInterval(_clTimer);
+  G.rd.clPIdx++;
+  if(G.rd.clPIdx>=G.rd.active.length){
+    G.rd.clRound++;G.rd.clPIdx=0;
+    if(G.rd.clRound>G.sett.clueRds){startVote();return;}
+  }
+  showClueTurn();
+}
+function skipClue(){nextClue();}
+function skipToVote(){clearInterval(_clTimer);startVote();}
+
+// ============================================================
+//  VOTING
+// ============================================================
+function startVote(){
+  G.rd.votes={};G.rd.voteIdx=0;_curVoteSel=-1;
+  if(G.sett.vote==='individual') showIndividualVote();
+  else showTeamVote();
+}
+
+function showIndividualVote(){
+  const vi=G.rd.active[G.rd.voteIdx]; // Active player voting
+  const vnm=G.players[vi];
+  document.getElementById('vt-title').textContent='🗳️ Cast Your Vote';
+  document.getElementById('vt-sub').textContent=`Pass phone to ${vnm}`;
+  const vh=document.getElementById('vt-voter-hdr');
+  vh.style.display='block';
+  document.getElementById('vt-voter-name').textContent=`${vnm}'s Vote`;
+  _curVoteSel=-1;
+  renderVoteOpts(false);
+  document.getElementById('vt-sbmt').disabled=true;
+  document.getElementById('vt-sbmt').textContent='Submit Vote';
+  go('vote');
+}
+
+function showTeamVote(){
+  document.getElementById('vt-title').textContent='🗳️ Team Vote';
+  document.getElementById('vt-sub').textContent='Discuss and agree on the Impostor';
+  document.getElementById('vt-voter-hdr').style.display='none';
+  _curVoteSel=-1;
+  renderVoteOpts(true);
+  document.getElementById('vt-sbmt').disabled=true;
+  document.getElementById('vt-sbmt').textContent='Confirm Final Vote';
+  go('vote');
+}
+
+function renderVoteOpts(showCnts){
+  document.getElementById('vt-opts').innerHTML=G.rd.active.map(i=>{
+    const nm=G.players[i];
+    return `
+    <div class="vopt ${_curVoteSel===i?'sel':''}" onclick="selVote(${i})">
+      <div class="vav">${nm[0].toUpperCase()}</div>
+      <div class="vnm">${nm}</div>
+      ${showCnts?`<div class="vcnt">${cntVotes(i)} 🗳️</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function cntVotes(t){return Object.values(G.rd.votes).filter(v=>v===t).length;}
+
+function selVote(i){
+  _curVoteSel=i;
+  renderVoteOpts(G.sett.vote==='team');
+  document.getElementById('vt-sbmt').disabled=false;
+}
+
+function submitVote(){
+  if(_curVoteSel<0) return;
+  if(G.sett.vote==='individual'){
+    const voterIdx=G.rd.active[G.rd.voteIdx];
+    G.rd.votes[voterIdx]=_curVoteSel;
+    G.rd.voteIdx++;
+    if(G.rd.voteIdx>=G.rd.active.length){processVote();return;}
+    _curVoteSel=-1;
+    go('reveal-lock');
+    document.querySelector('#reveal-lock div:nth-child(2)').textContent='Screen Locked';
+    document.querySelector('#reveal-lock div:nth-child(3)').textContent='Pass to the next voter';
+    setTimeout(()=>showIndividualVote(),1800);
+  } else {
+    G.rd.votes['team']=_curVoteSel;
+    processVote();
+  }
+}
+
+// ============================================================
+//  MULTI-ROUND LOGIC & RESULTS
+// ============================================================
+function processVote() {
+  const r = G.rd;
+  const tally = {};
+  r.active.forEach(i => tally[i] = 0);
+  Object.values(r.votes).forEach(t => tally[t] = (tally[t] || 0) + 1);
+  
+  let maxV = 0, ejected = -1;
+  Object.entries(tally).forEach(([i, c]) => { if(c > maxV) { maxV = c; ejected = parseInt(i); } });
+  
+  const isImp = r.impIdxs.includes(ejected) || ejected === r.mwIdx;
+  
+  // Remove the ejected player from the active list
+  r.active = r.active.filter(i => i !== ejected);
+  
+  // Count remaining teams
+  const impsLeft = r.active.filter(i => r.impIdxs.includes(i) || i === r.mwIdx).length;
+  const crewLeft = r.active.length - impsLeft;
+  
+  // Save vote tally for final screen display
+  r.finalTally = tally; 
+  
+  // Win Conditions
+  if (impsLeft === 0) {
+    r.crewWon = true; 
+    showResults();
+  } else if (impsLeft >= crewLeft) {
+    r.crewWon = false; 
+    showResults();
+  } else {
+    // Intermission - Game continues!
+    document.getElementById('int-title').textContent = `${G.players[ejected]} was Ejected!`;
+    document.getElementById('int-sub').textContent = isImp 
+      ? `They were an Impostor! ${impsLeft} Impostor(s) remain.` 
+      : `They were innocent! ${impsLeft} Impostor(s) remain.`;
+    document.getElementById('int-icon').textContent = isImp ? '🎉' : '🤦‍♂️';
+    go('intermission');
+  }
+}
+
+function continueGame() {
+  G.rd.clRound = 1;
+  G.rd.clPIdx = 0;
+  G.rd.votes = {};
+  G.rd.voteIdx = 0;
+  if (G.sett.clue) startClues();
+  else startVote();
+}
+
+function showResults(){
+  const r=G.rd;
+  
+  if(r.crewWon){
+    document.getElementById('r-emi').textContent='🎉';
+    document.getElementById('r-title').textContent='Crewmates Win!';
+    document.getElementById('r-title').className='rtitle win';
+    document.getElementById('r-sub').textContent=`All Impostors were caught!`;
+  } else {
+    document.getElementById('r-emi').textContent='😈';
+    document.getElementById('r-title').textContent='Impostors Win!';
+    document.getElementById('r-title').className='rtitle lose';
+    document.getElementById('r-sub').textContent=`Impostors have taken over!`;
+  }
+  
+  document.getElementById('r-rw').textContent=r.realW;
+  document.getElementById('r-iw').textContent=r.impMode==='none'
+    ? '??? (No word — Impostor mode)'
+    : r.impW;
+  
+  // Impostors list
+  const impNames=[...r.impIdxs.map(i=>G.players[i])];
+  if(r.mwIdx>=0) impNames.push(`${G.players[r.mwIdx]} (Mr. White)`);
+  document.getElementById('r-imps').innerHTML=impNames.map(nm=>`
+    <div class="pitem" style="background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);margin-bottom:8px;">
+      <span style="font-size:20px;margin-right:10px;">🎭</span>
+      <div class="pname">${nm}</div>
+    </div>`).join('');
+  
+  // Scores (Surviving winners get points)
+  const pts = calcPts(r.crewWon);
+  G.players.forEach((nm,i)=>{ G.lb[nm]=(G.lb[nm]||0)+pts[i]; });
+  saveLB();
+  
+  document.getElementById('r-scores').innerHTML=G.players.map((nm,i)=>{
+    const isImp=r.impIdxs.includes(i)||i===r.mwIdx;
+    const p=pts[i];
+    return `<div class="srow">
+      <div class="snm">${isImp?'🎭':'👤'} ${nm}</div>
+      <div class="sbdg ${p>0?'pos':'zer'}">+${p} pts</div>
+    </div>`;
+  }).join('');
+  
+  // Show final round's vote breakdown
+  let voteHTML='<div class="sec-lbl" style="margin-top:14px;">Final Round Votes</div><div class="card">';
+  G.players.forEach((nm,i)=>{
+    const c=r.finalTally[i]||0;
+    if(c>0) voteHTML+=`<div class="srow"><div class="snm">🗳️ ${nm}</div><div class="sbdg zer">${c} vote${c>1?'s':''}</div></div>`;
+  });
+  voteHTML+='</div>';
+  
+  go('results');
+  document.getElementById('r-scores').insertAdjacentHTML('afterend',voteHTML);
+}
+
+function calcPts(crewWon){
+  const pts={};
+  G.players.forEach((_,i)=>{
+    const isImp = G.rd.impIdxs.includes(i) || i === G.rd.mwIdx;
+    if (crewWon && !isImp) pts[i] = 2; // Crew gets 2 pts if they win
+    else if (!crewWon && isImp) pts[i] = 3; // Imps get 3 pts if they win
+    else pts[i] = 0;
+  });
+  return pts;
+}
+
+function playAgain(){ startGame(); }
+
+// ============================================================
+//  LEADERBOARD
+// ============================================================
+function saveLB(){try{localStorage.setItem('imp_lb',JSON.stringify(G.lb));}catch(e){}}
+function renderLB(){
+  const entries=Object.entries(G.lb).sort((a,b)=>b[1]-a[1]);
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('lb-list').innerHTML=entries.length===0
+    ?'<div style="text-align:center;color:var(--mu);padding:48px 0;">No scores yet.<br>Play a game first!</div>'
+    :entries.map(([nm,sc],i)=>`
+      <div class="lrow">
+        <div class="lrnk">${i<3?medals[i]:`#${i+1}`}</div>
+        <div class="lnm">${nm}</div>
+        <div class="lsc">${sc}</div>
+      </div>`).join('');
+}
+function resetLB(){
+  if(confirm('Reset all scores? Cannot be undone!')){
+    G.lb={};saveLB();renderLB();
+  }
+}
+</script>
+</body>
+</html>
